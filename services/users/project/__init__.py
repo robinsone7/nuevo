@@ -2,38 +2,29 @@
 
 
 import os  # nuevo
-from flask import Flask, jsonify
+from flask import Flask
 from flask_sqlalchemy import SQLAlchemy  # nuevo
 
 
-# instanciado la app
-app = Flask(__name__)
-
-# establecer configuraicon
-app_settings = os.getenv('APP_SETTINGS')   # Nuevo
-app.config.from_object(app_settings)       # Nuevo
-
 # instanciando la db
-db = SQLAlchemy(app)  # nuevo
+db = SQLAlchemy()  # nuev
 
+def create_app(script_info=None):
+    #Intanciar la app
+    app = Flask(__name__)
+    # establecer configuracion
+    app_settings = os.getenv('APP_SETTINGS')   # Nuevo
+    app.config.from_object(app_settings)       # Nuevo
+    #configurar las extensiones
+    db.init_app(app)
 
-# modelo
-class User(db.Model):  # nuevo
-    __tablename__ = 'users'
-    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    username = db.Column(db.String(128), nullable=False)
-    email = db.Column(db.String(128), nullable=False)
-    active = db.Column(db.Boolean(), default=True, nullable=False)
+    #registrar blueprints
+    from project.api.users import users_blueprint
+    app.register_blueprint(users_blueprint)
 
-    def __init__(self, username, email):
-        self.username = username
-        self.email = email
+    #shell context para flax cli
+    @app.shell_context_processor
+    def ctx():
+        return {'app':app,'db':db}
+    return app
 
-
-# rutas
-@app.route('/users/ping', methods=['GET'])
-def ping_pong():
-    return jsonify({
-        'status': 'success',
-        'message': 'pong!'
-    })
